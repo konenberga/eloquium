@@ -93,6 +93,10 @@ Training/dataset/preprocessing tooling goes in sibling dirs (`training/`,
   of CUDA libs). For a GPU build:
   `docker compose build --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu124`
   (and enable the GPU block in docker-compose.yml).
+- **`make up` auto-detects the GPU** (via `nvidia-smi`) and passes the right
+  `TORCH_INDEX` — CUDA if present, CPU otherwise. This is the recommended way to
+  build/run; `make logs`, `make down`, `make health` are also provided. Plain
+  `docker compose` still works and defaults to CPU torch.
 
 ## Swapping the Trained Model
 
