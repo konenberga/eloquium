@@ -88,6 +88,11 @@ Training/dataset/preprocessing tooling goes in sibling dirs (`training/`,
   writable ownership.
 - **HEALTHCHECK** hits `/health` (300s start period for first-run model download).
 - **Port bound to `127.0.0.1`** only (personal-use phase). Open it up for SaaS.
+- **CPU-only torch by default.** The Dockerfile installs torch/torchaudio from
+  `https://download.pytorch.org/whl/cpu` (the default PyPI wheel bundles ~1.5GB
+  of CUDA libs). For a GPU build:
+  `docker compose build --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu124`
+  (and enable the GPU block in docker-compose.yml).
 
 ## Swapping the Trained Model
 

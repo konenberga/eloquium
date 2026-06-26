@@ -16,6 +16,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN pip install --no-cache-dir --upgrade pip
 
+# Install torch from the CPU index by default. The default PyPI torch wheel
+# bundles ~1.5GB of CUDA libraries (cudnn, cusparselt, etc.) we don't need for
+# CPU inference. For a GPU build:
+#   docker compose build --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu124
+ARG TORCH_INDEX=https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir --prefix=/install \
+        --index-url ${TORCH_INDEX} \
+        torch torchaudio
+
+# Make the torch we just installed visible to the next pip run so f5-tts
+# resolves it as satisfied instead of pulling the CUDA build from PyPI.
+ENV PYTHONPATH=/install/lib/python3.11/site-packages
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
