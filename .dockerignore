@@ -1,0 +1,10 @@
+.git
+.gitignore
+__pycache__/
+*.pyc
+*.wav
+*.mp3
+.venv/
+cache/
+README.md
+CLAUDE.md
