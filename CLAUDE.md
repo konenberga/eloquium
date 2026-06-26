@@ -74,9 +74,20 @@ Training/dataset/preprocessing tooling goes in sibling dirs (`training/`,
 | Variable | Default | Purpose |
 |---|---|---|
 | `HF_HOME` | `/cache` | Where HuggingFace downloads weights |
+| `NUMBA_CACHE_DIR` | `/tmp/numba_cache` | Writable numba cache (librosa needs it as non-root) |
 | `F5_REF_AUDIO` | bundled `basic_ref_en.wav` | Default voice reference WAV |
 | `F5_REF_TEXT` | `""` | Transcript of ref audio (auto-detected if empty) |
 | `F5_CHECKPOINT` | unset | Override checkpoint path; passed as `ckpt_file` to F5TTS |
+
+## Docker Conventions (adapted from the sibling `voicebox` project)
+
+- **Python 3.11** (`python:3.11-slim`) — F5-TTS deps are unhappy on 3.12+.
+- **Multi-stage build**: a `builder` stage compiles deps; the runtime image
+  copies `/install` and carries no compilers.
+- **Non-root user** `eloquium`; `/cache` is chowned so the named volume inherits
+  writable ownership.
+- **HEALTHCHECK** hits `/health` (300s start period for first-run model download).
+- **Port bound to `127.0.0.1`** only (personal-use phase). Open it up for SaaS.
 
 ## Swapping the Trained Model
 
