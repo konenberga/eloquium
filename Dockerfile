@@ -69,6 +69,10 @@ ENV NUMBA_CACHE_DIR=/tmp/numba_cache
 RUN mkdir -p /cache && chown -R eloquium:eloquium /cache
 
 COPY --chown=eloquium:eloquium *.py ./
+# Shared text preprocessing (RUAccent hook used by TTSEngine.synthesize). Pure
+# Python; the ruaccent dependency is optional and lazy — normalize_ru passes
+# text through unchanged if it isn't installed (see preprocessing/ru_accent.py).
+COPY --chown=eloquium:eloquium preprocessing/ ./preprocessing/
 
 USER eloquium
 

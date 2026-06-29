@@ -10,6 +10,8 @@ import os
 import soundfile as sf
 import torch
 
+from preprocessing import normalize_ru
+
 logger = logging.getLogger(__name__)
 
 # Known transcript of the bundled basic_ref_en.wav (from f5_tts basic.toml).
@@ -80,10 +82,16 @@ class TTSEngine:
     def synthesize(self, text: str, language: str = "en") -> bytes:
         """Generate speech for `text`, returning WAV bytes.
 
-        `language` is threaded through for future RU preprocessing (RUAccent
-        stress normalization). It is accepted now but not yet applied — see the
-        TODO in CLAUDE.md.
+        For `language == "ru"`, the text is stress-normalized with RUAccent
+        (shared preprocessing/ module) before synthesis — the same normalization
+        applied to training transcripts, so the two never drift. If RUAccent is
+        not installed, normalize_ru passes the text through unchanged. Note this
+        only improves output once a Russian-capable checkpoint is loaded; the
+        base model can't pronounce Russian regardless.
         """
+        if language == "ru":
+            text = normalize_ru(text)
+
         wav, sr, _ = self._model.infer(
             ref_file=self._ref_audio,
             ref_text=self._ref_text,
