@@ -40,11 +40,19 @@ def _get_accentizer():
         from ruaccent import RUAccent
 
         accentizer = RUAccent()
+        # RUAccent downloads its models into `workdir`; default it to a writable,
+        # persistent dir in the cache volume (the container runs non-root, so the
+        # package's own site-packages/.cache is read-only). Falls back to /tmp.
+        workdir = os.environ.get("RUACCENT_WORKDIR") or os.path.join(
+            os.environ.get("HF_HOME", "/tmp"), "ruaccent"
+        )
+        os.makedirs(workdir, exist_ok=True)
         # 'turbo' is the small/fast omograph model — good default for CPU
         # inference. Override with RUACCENT_MODEL_SIZE on the training box.
         accentizer.load(
             omograph_model_size=os.environ.get("RUACCENT_MODEL_SIZE", "turbo"),
             use_dictionary=True,
+            workdir=workdir,
         )
         _accentizer = accentizer
         logger.info("RUAccent loaded (omograph=%s)", os.environ.get("RUACCENT_MODEL_SIZE", "turbo"))

@@ -68,6 +68,12 @@ ENV NUMBA_CACHE_DIR=/tmp/numba_cache
 # here inherits this ownership on first creation.
 RUN mkdir -p /cache && chown -R eloquium:eloquium /cache
 
+# RUAccent writes lock/metadata into its own package dir on first load; make it
+# writable for the non-root user. Its large models go to RUACCENT_WORKDIR
+# (defaults to $HF_HOME/ruaccent, i.e. the persistent cache volume).
+RUN mkdir -p /usr/local/lib/python3.11/site-packages/ruaccent/.cache && \
+    chown -R eloquium:eloquium /usr/local/lib/python3.11/site-packages/ruaccent
+
 COPY --chown=eloquium:eloquium *.py ./
 # Shared text preprocessing (RUAccent hook used by TTSEngine.synthesize). Pure
 # Python; the ruaccent dependency is optional and lazy — normalize_ru passes

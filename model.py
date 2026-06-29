@@ -59,14 +59,30 @@ class TTSEngine:
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        # F5_CHECKPOINT lets the cloud-trained model swap in with zero code change.
-        ckpt = os.environ.get("F5_CHECKPOINT") or None
+        # A custom checkpoint swaps in with zero code change. Three knobs,
+        # because a fine-tune may differ from the base on more than the weights:
+        #   F5_CHECKPOINT — weights (.safetensors/.pt)
+        #   F5_VOCAB      — tokenizer vocab (a RU fine-tune extends it)
+        #   F5_MODEL      — architecture name; e.g. the community RU model is
+        #                   "F5TTS_Base" (v0), not the default "F5TTS_v1_Base".
+        # ckpt_file/vocab_file default to "" (F5TTS's own "use base" sentinel).
+        ckpt = os.environ.get("F5_CHECKPOINT") or ""
+        vocab = os.environ.get("F5_VOCAB") or ""
+        model_arch = os.environ.get("F5_MODEL") or "F5TTS_v1_Base"
         if ckpt:
-            logger.info("Loading custom checkpoint: %s", ckpt)
+            logger.info(
+                "Loading checkpoint=%s vocab=%s arch=%s",
+                ckpt, vocab or "(default)", model_arch,
+            )
         else:
             logger.info("Loading base F5-TTS (downloads to HF_HOME if not cached)...")
 
-        self._model = F5TTS(ckpt_file=ckpt, device=self.device) if ckpt else F5TTS(device=self.device)
+        self._model = F5TTS(
+            model=model_arch,
+            ckpt_file=ckpt,
+            vocab_file=vocab,
+            device=self.device,
+        )
         self._ref_audio, is_bundled = _resolve_ref_audio()
 
         # An explicit F5_REF_TEXT always wins. Otherwise, use the known
@@ -77,19 +93,29 @@ class TTSEngine:
             ref_text = _BUNDLED_REF_TEXT if is_bundled else ""
         self._ref_text = ref_text
 
-        logger.info("Ready  device=%s  ref_audio=%s", self.device, self._ref_audio)
+        # Whether to apply RUAccent stress marks to Russian text is a property of
+        # the loaded checkpoint, not a universal good: a model trained on plain
+        # text (e.g. hotstone228/F5-TTS-Russian) is *corrupted* by '+' marks
+        # (verified via ASR round-trip), while a model trained on stress-marked
+        # data needs them. Off by default; enable F5_RU_STRESS=1 for a
+        # stress-trained checkpoint (e.g. one trained via our training/ scaffold).
+        self._ru_stress = os.environ.get("F5_RU_STRESS", "").lower() in ("1", "true", "yes")
+
+        logger.info(
+            "Ready  device=%s  ref_audio=%s  ru_stress=%s",
+            self.device, self._ref_audio, self._ru_stress,
+        )
 
     def synthesize(self, text: str, language: str = "en") -> bytes:
         """Generate speech for `text`, returning WAV bytes.
 
-        For `language == "ru"`, the text is stress-normalized with RUAccent
-        (shared preprocessing/ module) before synthesis — the same normalization
-        applied to training transcripts, so the two never drift. If RUAccent is
-        not installed, normalize_ru passes the text through unchanged. Note this
-        only improves output once a Russian-capable checkpoint is loaded; the
-        base model can't pronounce Russian regardless.
+        For `language == "ru"` AND when the loaded checkpoint was trained on
+        stress-marked text (F5_RU_STRESS=1), the text is stress-normalized with
+        RUAccent (shared preprocessing/ module) — the same normalization applied
+        to training transcripts, so the two never drift. It is off by default
+        because a plain-text-trained checkpoint is degraded by the marks.
         """
-        if language == "ru":
+        if language == "ru" and self._ru_stress:
             text = normalize_ru(text)
 
         wav, sr, _ = self._model.infer(
