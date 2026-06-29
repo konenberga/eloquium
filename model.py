@@ -6,32 +6,41 @@ baked into the Docker image. See CLAUDE.md for the design rules.
 import io
 import logging
 import os
-from pathlib import Path
 
 import soundfile as sf
 import torch
 
 logger = logging.getLogger(__name__)
 
+# Known transcript of the bundled basic_ref_en.wav (from f5_tts basic.toml).
+# Supplying it avoids F5-TTS auto-transcribing the reference with Whisper
+# (a ~1.6GB download + slow CPU pass) on the first request.
+_BUNDLED_REF_TEXT = "Some call me nature, others call me mother nature."
 
-def _resolve_ref_audio() -> str:
-    """Path to the default reference audio (defines the default voice).
+
+def _resolve_ref_audio() -> tuple[str, bool]:
+    """Resolve the default reference audio (defines the default voice).
 
     Priority: F5_REF_AUDIO env var → bundled example from the f5-tts package.
     This is the voice reference, NOT the model weights.
+
+    Returns (path, is_bundled_default); the flag lets the caller supply the
+    known transcript only when using our own bundled reference.
     """
     env_path = os.environ.get("F5_REF_AUDIO")
     if env_path:
-        return env_path
+        return env_path, False
     try:
-        import f5_tts
+        # f5_tts is a namespace package (__file__ is None), so resolve the
+        # bundled example via importlib.resources rather than __file__.
+        from importlib.resources import files
 
         candidate = (
-            Path(f5_tts.__file__).parent
+            files("f5_tts")
             / "infer" / "examples" / "basic" / "basic_ref_en.wav"
         )
-        if candidate.exists():
-            return str(candidate)
+        if candidate.is_file():
+            return str(candidate), True
     except Exception:  # pragma: no cover - import/layout fallback
         pass
     raise RuntimeError(
@@ -56,8 +65,16 @@ class TTSEngine:
             logger.info("Loading base F5-TTS (downloads to HF_HOME if not cached)...")
 
         self._model = F5TTS(ckpt_file=ckpt, device=self.device) if ckpt else F5TTS(device=self.device)
-        self._ref_audio = _resolve_ref_audio()
-        self._ref_text = os.environ.get("F5_REF_TEXT", "")
+        self._ref_audio, is_bundled = _resolve_ref_audio()
+
+        # An explicit F5_REF_TEXT always wins. Otherwise, use the known
+        # transcript for the bundled reference; for a custom F5_REF_AUDIO with
+        # no text, leave it empty so F5-TTS auto-transcribes (Whisper).
+        ref_text = os.environ.get("F5_REF_TEXT")
+        if ref_text is None:
+            ref_text = _BUNDLED_REF_TEXT if is_bundled else ""
+        self._ref_text = ref_text
+
         logger.info("Ready  device=%s  ref_audio=%s", self.device, self._ref_audio)
 
     def synthesize(self, text: str, language: str = "en") -> bytes:

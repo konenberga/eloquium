@@ -20,10 +20,15 @@ RUN pip install --no-cache-dir --upgrade pip
 # bundles ~1.5GB of CUDA libraries (cudnn, cusparselt, etc.) we don't need for
 # CPU inference. For a GPU build:
 #   docker compose build --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu124
+#
+# torchcodec must come from the SAME index: torchaudio delegates audio decoding
+# to it, and the default PyPI torchcodec wheel is a CUDA build that dlopens
+# libnvrtc.so at import and crashes on a CPU-only image. The CPU-index wheel
+# (torchcodec==X+cpu) links only ffmpeg.
 ARG TORCH_INDEX=https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir --prefix=/install \
         --index-url ${TORCH_INDEX} \
-        torch torchaudio
+        torch torchaudio torchcodec
 
 # Make the torch we just installed visible to the next pip run so f5-tts
 # resolves it as satisfied instead of pulling the CUDA build from PyPI.
