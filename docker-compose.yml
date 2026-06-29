@@ -1,0 +1,45 @@
+services:
+  tts:
+    build: .
+    container_name: eloquium-tts
+    restart: unless-stopped
+
+    ports:
+      # Bind to localhost only for security (personal-use phase)
+      - "127.0.0.1:8000:8000"
+
+    environment:
+      HF_HOME: /cache
+      NUMBA_CACHE_DIR: /tmp/numba_cache
+      # Swap in the cloud-trained model by uncommenting and pointing at the file:
+      # F5_CHECKPOINT: /cache/your_model.pt
+      # Override the default voice:
+      # F5_REF_AUDIO: /cache/my_voice.wav
+      # F5_REF_TEXT: "transcript of the reference audio"
+
+    volumes:
+      # Model weights persist here across restarts — first run downloads them.
+      - model-cache:/cache
+
+    networks:
+      - eloquium-net
+
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+
+    # --- Enable GPU (requires nvidia-container-toolkit on the host) ---
+    #   reservations:
+    #     devices:
+    #       - driver: nvidia
+    #         count: 1
+    #         capabilities: [gpu]
+
+networks:
+  eloquium-net:
+    driver: bridge
+
+volumes:
+  model-cache:

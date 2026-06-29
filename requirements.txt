@@ -1,0 +1,4 @@
+f5-tts>=1.0.0
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+soundfile>=0.12.1
