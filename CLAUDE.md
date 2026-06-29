@@ -76,8 +76,12 @@ Training/dataset/preprocessing tooling goes in sibling dirs (`training/`,
 | `HF_HOME` | `/cache` | Where HuggingFace downloads weights |
 | `NUMBA_CACHE_DIR` | `/tmp/numba_cache` | Writable numba cache (librosa needs it as non-root) |
 | `F5_REF_AUDIO` | bundled `basic_ref_en.wav` | Default voice reference WAV |
-| `F5_REF_TEXT` | `""` | Transcript of ref audio (auto-detected if empty) |
-| `F5_CHECKPOINT` | unset | Override checkpoint path; passed as `ckpt_file` to F5TTS |
+| `F5_REF_TEXT` | bundled transcript / `""` | Transcript of ref audio (auto-detected via Whisper if empty + custom ref) |
+| `F5_CHECKPOINT` | unset | Override checkpoint weights; passed as `ckpt_file` to F5TTS |
+| `F5_VOCAB` | `""` | Tokenizer vocab; passed as `vocab_file` (a RU fine-tune extends it) |
+| `F5_MODEL` | `F5TTS_v1_Base` | Architecture name; the community RU model is v0 `F5TTS_Base` |
+| `F5_RU_STRESS` | unset (off) | Apply RUAccent `+` stress marks to RU text. Only for a checkpoint **trained** on stress-marked data — it corrupts a plain-text-trained one |
+| `RUACCENT_WORKDIR` | `$HF_HOME/ruaccent` | Where RUAccent downloads its models (writable, persistent) |
 
 ## Docker Conventions (adapted from the sibling `voicebox` project)
 
@@ -102,17 +106,29 @@ Training/dataset/preprocessing tooling goes in sibling dirs (`training/`,
 
 When cloud training completes:
 1. Place the checkpoint in the `model-cache` volume (or mount it into the container).
-2. Set `F5_CHECKPOINT=/cache/your_model.pt` in docker-compose `environment`.
+2. Set `F5_CHECKPOINT=/cache/your_model.pt` in docker-compose `environment`. Also
+   set `F5_VOCAB` if the model ships its own vocab and `F5_MODEL` if it isn't the
+   v1 architecture. If it was trained on stress-marked text, set `F5_RU_STRESS=1`.
 3. `docker compose up -d` — restart picks it up. **No code change required.**
+
+### Current model: pre-trained Russian (interim)
+
+Until our own training completes, the service runs the community
+`hotstone228/F5-TTS-Russian` checkpoint (RU+EN, v0 `F5TTS_Base` arch, plain text,
+**CC BY-NC-SA 4.0 — non-commercial**, so personal-use only). Files live at
+`/cache/ru/` in the volume; docker-compose points `F5_CHECKPOINT`/`F5_VOCAB`/
+`F5_MODEL` at it. Russian intelligibility verified via ASR round-trip
+(`"Привет, мир."` → audio → `"Привет, мир!"`). `F5_RU_STRESS` is **off** for it.
 
 ## TODO (not done yet)
 
-- [~] Russian preprocessing — hook wired: `TTSEngine.synthesize` calls
-  `preprocessing.normalize_ru` for `language == "ru"`. `ruaccent` is **not** yet
-  installed in the inference image, so it currently passes text through
-  unchanged (and stress marks only help once the RU checkpoint is loaded). To
-  activate: add `ruaccent` to `requirements.txt`. The same `normalize_ru` is
-  used by `training/prepare_dataset.py` so training and inference never drift.
+- [x] Russian preprocessing — hook wired and `ruaccent` installed.
+  `TTSEngine.synthesize` calls `preprocessing.normalize_ru` for `language ==
+  "ru"` when `F5_RU_STRESS=1`. It is **off by default**: the current RU
+  checkpoint is plain-text-trained and the `+` marks corrupt it (verified). The
+  same `normalize_ru` is used by `training/prepare_dataset.py`, so a future
+  stress-trained checkpoint (set `F5_RU_STRESS=1`) gets identical normalization
+  at train and inference time — no drift.
 - [~] Training scripts / dataset pipeline — scaffolded in `training/` (runs on
   the cloud GPU box). F5-TTS CLI specifics marked `TODO(gpu)`; no run yet.
 - [ ] Voice cloning endpoint (future phase)

@@ -11,8 +11,17 @@ services:
     environment:
       HF_HOME: /cache
       NUMBA_CACHE_DIR: /tmp/numba_cache
-      # Swap in the cloud-trained model by uncommenting and pointing at the file:
-      # F5_CHECKPOINT: /cache/your_model.pt
+      # Pre-trained Russian+English F5-TTS (hotstone228/F5-TTS-Russian).
+      # Files are downloaded into the model-cache volume at /cache/ru/.
+      # NOTE: this checkpoint is the v0 "F5TTS_Base" architecture, so F5_MODEL
+      # must override the v1 default, and it ships its own extended vocab.
+      F5_CHECKPOINT: /cache/ru/model_last.safetensors
+      F5_VOCAB: /cache/ru/vocab.txt
+      F5_MODEL: F5TTS_Base
+      # This checkpoint was trained on PLAIN Russian text — RUAccent '+' stress
+      # marks corrupt it (verified via ASR round-trip), so stress is OFF. Set
+      # F5_RU_STRESS=1 only for a checkpoint trained on stress-marked data.
+      # F5_RU_STRESS: "1"
       # Override the default voice:
       # F5_REF_AUDIO: /cache/my_voice.wav
       # F5_REF_TEXT: "transcript of the reference audio"
