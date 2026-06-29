@@ -107,6 +107,12 @@ When cloud training completes:
 
 ## TODO (not done yet)
 
-- [ ] Russian preprocessing (RUAccent + sova-tts-tps) in `TTSEngine.synthesize`
-- [ ] Training scripts / dataset pipeline (`training/`)
+- [~] Russian preprocessing — hook wired: `TTSEngine.synthesize` calls
+  `preprocessing.normalize_ru` for `language == "ru"`. `ruaccent` is **not** yet
+  installed in the inference image, so it currently passes text through
+  unchanged (and stress marks only help once the RU checkpoint is loaded). To
+  activate: add `ruaccent` to `requirements.txt`. The same `normalize_ru` is
+  used by `training/prepare_dataset.py` so training and inference never drift.
+- [~] Training scripts / dataset pipeline — scaffolded in `training/` (runs on
+  the cloud GPU box). F5-TTS CLI specifics marked `TODO(gpu)`; no run yet.
 - [ ] Voice cloning endpoint (future phase)

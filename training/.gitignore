@@ -1,0 +1,6 @@
+# Training artifacts — never commit data or weights.
+data/
+checkpoints/
+*.pt
+*.arrow
+wavs/
