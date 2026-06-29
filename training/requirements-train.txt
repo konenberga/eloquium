@@ -1,0 +1,15 @@
+# Training-side dependencies — install on the CLOUD GPU box only.
+#
+# Unlike the inference image (CPU-only torch), training needs the CUDA build:
+#   pip install --index-url https://download.pytorch.org/whl/cu124 torch torchaudio torchcodec
+# then:
+#   pip install -r training/requirements-train.txt
+
+f5-tts>=1.0.0          # provides f5-tts_finetune-cli / f5-tts_prepare_csv_wavs
+ruaccent>=1.5.0        # Russian stress normalization (shared with preprocessing/)
+soundfile>=0.12.1
+librosa>=0.10.0        # resampling / audio validation in prepare_dataset.py
+
+# Evaluation (ASR round-trip WER gate)
+transformers>=4.40.0   # openai/whisper-large-v3-turbo
+jiwer>=3.0.0           # word error rate
