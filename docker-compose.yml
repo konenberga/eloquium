@@ -38,13 +38,12 @@ services:
         limits:
           cpus: '4'
           memory: 8G
-
-    # --- Enable GPU (requires nvidia-container-toolkit on the host) ---
-    #   reservations:
-    #     devices:
-    #       - driver: nvidia
-    #         count: 1
-    #         capabilities: [gpu]
+        # --- GPU enabled (requires nvidia-container-toolkit on the host) ---
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
 networks:
   eloquium-net:
