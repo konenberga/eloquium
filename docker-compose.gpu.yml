@@ -1,0 +1,17 @@
+# GPU override. Included automatically by the Makefile when an NVIDIA GPU is
+# detected (nvidia-smi works). Requires the NVIDIA Container Toolkit on the host
+# — run `make gpu-setup` once if it's missing.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+#
+# Kept separate from the base compose so a plain `docker compose up` still works
+# on CPU-only machines (the reservations block errors out without a GPU).
+services:
+  tts:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

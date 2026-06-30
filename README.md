@@ -8,6 +8,46 @@ This service converts written text into natural-sounding speech in **Russian** a
 
 The system is built to run on modest local hardware for inference, while training and fine-tuning are offloaded to rented cloud GPUs.
 
+## Quickstart
+
+Requires Docker (with Compose). The Makefile auto-detects an NVIDIA GPU and
+selects the matching torch build (CUDA vs CPU) and compose config — the same
+commands work on a GPU box or a CPU-only machine.
+
+```bash
+git clone <repo> && cd eloquium
+
+make gpu-setup     # only if the machine has an NVIDIA GPU (installs the NVIDIA
+                   # Container Toolkit on the host; uses sudo, one-time)
+
+make run           # build the image, start the service, wait until it's healthy
+                   # (the first run downloads the model weights — can take a few
+                   #  minutes; they persist in a Docker volume afterwards)
+```
+
+Generate audio — `LNG` is `en` or `ru` (defaults to `en`). It prints the path to
+the resulting `.wav`:
+
+```bash
+make gen TEXT="Привет, мир. Как дела?" LNG=ru
+# -> /path/to/eloquium/out/tts_20260630_121115.wav
+```
+
+Or call the API directly:
+
+```bash
+curl -X POST http://localhost:8000/tts \
+  -H 'Content-Type: application/json' \
+  -d '{"text": "Hello, world.", "language": "en"}' \
+  --output hello.wav
+```
+
+**API contract** — `POST /tts` takes `{text, language}` (`language` ∈ `en`, `ru`)
+and returns `audio/wav`. `GET /health` returns `{status, device}` (device is
+`cuda` or `cpu`).
+
+Other useful targets: `make logs`, `make health`, `make gpu-check`, `make down`.
+
 ## Goals
 
 - Achieve near-ElevenLabs quality for both Russian and English
