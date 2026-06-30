@@ -22,9 +22,11 @@ services:
       # marks corrupt it (verified via ASR round-trip), so stress is OFF. Set
       # F5_RU_STRESS=1 only for a checkpoint trained on stress-marked data.
       # F5_RU_STRESS: "1"
-      # Override the default voice:
-      # F5_REF_AUDIO: /cache/my_voice.wav
-      # F5_REF_TEXT: "transcript of the reference audio"
+      # Russian reference voice (defines the voice F5-TTS imitates). A native RU
+      # reference is essential for natural Russian — the bundled English default
+      # injects a foreign accent. Clip from google/fleurs ru_ru (CC BY 4.0).
+      F5_REF_AUDIO: /app/assets/ref_ru.wav
+      F5_REF_TEXT: "как только вы выйдете из течения плыть обратно будет не труднее чем обычно"
 
     volumes:
       # Model weights persist here across restarts — first run downloads them.
