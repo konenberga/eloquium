@@ -97,10 +97,19 @@ Training/dataset/preprocessing tooling goes in sibling dirs (`training/`,
   of CUDA libs). For a GPU build:
   `docker compose build --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu124`
   (and enable the GPU block in docker-compose.yml).
-- **`make up` auto-detects the GPU** (via `nvidia-smi`) and passes the right
-  `TORCH_INDEX` — CUDA if present, CPU otherwise. This is the recommended way to
-  build/run; `make logs`, `make down`, `make health` are also provided. Plain
-  `docker compose` still works and defaults to CPU torch.
+- **The Makefile auto-detects the GPU** (via `nvidia-smi`) and selects both the
+  right `TORCH_INDEX` (CUDA vs CPU) **and** the docker-compose GPU override.
+  - `make run` — from-scratch entry point: build + start + wait until healthy.
+  - `make gen TEXT="..." LNG=ru` — synthesize; prints the path to a `.wav` in `out/`.
+  - `make gpu-setup` — install the NVIDIA Container Toolkit on the host (sudo, one-time).
+  - `make gpu-check` — verify Docker can see the GPU.
+  - `make up` / `logs` / `down` / `health` / `restart` / `ps` as before.
+  Plain `docker compose` still works and defaults to CPU torch.
+- **GPU is opt-in via a compose override.** The base `docker-compose.yml` is
+  CPU-safe (no device reservation, so `docker compose up` works on any machine).
+  The `reservations` GPU block lives in `docker-compose.gpu.yml`, which the
+  Makefile layers on (`-f docker-compose.yml -f docker-compose.gpu.yml`) only
+  when a GPU is detected. Run GPU manually with both `-f` flags.
 
 ## Swapping the Trained Model
 

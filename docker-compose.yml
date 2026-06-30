@@ -38,12 +38,9 @@ services:
         limits:
           cpus: '4'
           memory: 8G
-        # --- GPU enabled (requires nvidia-container-toolkit on the host) ---
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    # GPU is opt-in via the docker-compose.gpu.yml override (the Makefile adds it
+    # automatically when an NVIDIA GPU is present). Kept out of the base file so
+    # `docker compose up` still works on CPU-only machines.
 
 networks:
   eloquium-net:
