@@ -79,16 +79,17 @@ health: ## Curl the health endpoint
 	@curl -fsS $(URL)/health && echo
 
 gen: ## Synthesize speech: make gen TEXT="..." [LNG=ru] -> prints path to a .wav
-	@test -n "$(TEXT)" || { echo "usage: make gen TEXT=\"your text\" [LNG=ru]"; exit 1; }
-	@mkdir -p $(OUT_DIR)
+	@test -n "$(TEXT)" || { echo "usage: make gen TEXT=\"your text\" [LNG=ru]   (do NOT use sudo)"; exit 1; }
+	@mkdir -p $(OUT_DIR) 2>/dev/null || true
+	@test -w $(OUT_DIR) || { echo ">> $(OUT_DIR)/ is not writable (did you run 'sudo make gen' before? fix: sudo chown -R \$$USER $(OUT_DIR))"; exit 1; }
 	@f="$(OUT_DIR)/tts_$$(date +%Y%m%d_%H%M%S).wav"; \
 	payload=$$(printf '%s' '$(TEXT)' | LANG=C.UTF-8 python3 -c 'import json,sys; print(json.dumps({"text": sys.stdin.read(), "language": "$(LNG)"}))'); \
 	code=$$(curl -s -o "$$f" -w '%{http_code}' -X POST $(URL)/tts \
-		-H 'Content-Type: application/json' -d "$$payload"); \
-	if [ "$$code" = "200" ]; then \
+		-H 'Content-Type: application/json' -d "$$payload") || { echo ">> request failed — is the service up? try: make health"; rm -f "$$f"; exit 1; }; \
+	if [ "$$code" = "200" ] && [ -s "$$f" ]; then \
 		echo "$$(cd "$$(dirname "$$f")" && pwd)/$$(basename "$$f")"; \
 	else \
-		echo ">> FAILED (HTTP $$code):"; cat "$$f"; echo; rm -f "$$f"; exit 1; \
+		echo ">> FAILED (HTTP $$code):"; [ -s "$$f" ] && head -c 300 "$$f"; echo; rm -f "$$f"; exit 1; \
 	fi
 
 gpu-check: ## Verify Docker can see the NVIDIA GPU
