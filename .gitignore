@@ -8,3 +8,5 @@ venv/
 # Local model/audio scratch
 *.wav
 *.pt
+# ...but the bundled reference voice(s) are committed
+!assets/*.wav

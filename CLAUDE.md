@@ -129,6 +129,13 @@ Until our own training completes, the service runs the community
 `F5_MODEL` at it. Russian intelligibility verified via ASR round-trip
 (`"Привет, мир."` → audio → `"Привет, мир!"`). `F5_RU_STRESS` is **off** for it.
 
+**Default voice is a native Russian reference** (`assets/ref_ru.wav`, baked into
+the image; `F5_REF_AUDIO`/`F5_REF_TEXT` point at it). This matters a lot: F5-TTS
+imitates the reference voice, so the old English default (`basic_ref_en.wav`)
+injected a foreign accent and even corrupted words in Russian output. Switching
+to a native RU reference (clip from `google/fleurs` ru_ru, CC BY 4.0) fixed both,
+verified via before/after ASR. Replace the file + `F5_REF_TEXT` to change voices.
+
 ## TODO (not done yet)
 
 - [x] Russian preprocessing — hook wired and `ruaccent` installed.

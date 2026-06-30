@@ -79,6 +79,10 @@ COPY --chown=eloquium:eloquium *.py ./
 # Python; the ruaccent dependency is optional and lazy — normalize_ru passes
 # text through unchanged if it isn't installed (see preprocessing/ru_accent.py).
 COPY --chown=eloquium:eloquium preprocessing/ ./preprocessing/
+# Reference voice(s). NOT the model — this is the default voice F5-TTS imitates
+# (CLAUDE.md rule 4). Small (~220KB), so it's baked in for a self-contained,
+# network-free default; F5_REF_AUDIO can still override it at runtime.
+COPY --chown=eloquium:eloquium assets/ ./assets/
 
 USER eloquium
 
